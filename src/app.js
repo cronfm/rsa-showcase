@@ -1,4 +1,5 @@
 import { rsaRoundTrip, fermatTest, isPrime } from './engine.js';
+import { originalFermatTest } from './original-fermat.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = (value) => value.toLocaleString('en-US');
@@ -67,7 +68,7 @@ function runRsa() {
     const e = integer('public-e', 'Exponent');
     const message = integer('message', 'Message');
     if (p === 2n || q === 2n) throw new Error('Choose two distinct odd primes greater than 2 for this RSA studio.');
-    if (p > 1_000_000n || q > 1_000_000n) throw new Error('For this small-number playground, choose primes below 1,000,000.');
+    if (p > 1_000_000n || q > 1_000_000n) throw new Error('This RSA studio accepts primes below 1,000,000.');
     const result = rsaRoundTrip({ p, q, e, message });
     roundTrip = result;
     submittedMessage = message;
@@ -113,40 +114,64 @@ $('sample-primes').addEventListener('click', () => {
   runRsa();
 });
 
+const randomMode = () => document.querySelector('input[name="witness-mode"]:checked').value === 'random';
 function runFermat() {
   try {
     const n = integer('candidate', 'Candidate');
-    const rawBases = $('bases').value.split(',').map((part) => part.trim());
-    if (rawBases.length > 16 || rawBases.some((part) => !/^\d{1,20}$/.test(part))) throw new Error('Enter 1–16 integer bases, separated by commas.');
-    const result = fermatTest(n, rawBases.map(BigInt));
+    const random = randomMode();
+    let result;
+    if (random) {
+      const rounds = Number($('rounds').value);
+      if (!Number.isInteger(rounds) || rounds < 1 || rounds > 64) throw new Error('Choose a maximum of 1–64 rounds.');
+      result = originalFermatTest(n, rounds);
+    } else {
+      const rawBases = $('bases').value.split(',').map((part) => part.trim());
+      if (rawBases.length > 16 || rawBases.some((part) => !/^\d{1,20}$/.test(part))) throw new Error('Enter 1–16 integer bases, separated by commas.');
+      const inspection = fermatTest(n, rawBases.map(BigInt));
+      result = { ...inspection, isNotPrime: !inspection.probablePrime, completedRounds: inspection.results.length, effectiveRounds: inspection.results.length };
+    }
     const prime = isPrime(n);
     set('fermat-error', '');
     set('candidate-label', fmt(n));
-    set('fermat-verdict', result.results.length === 0 ? 'Trivial check' : result.probablePrime ? 'Passes these bases' : 'Does not pass');
-    set('fermat-detail', result.reason || (result.probablePrime ? 'No composite witness found. This is not a proof of primality.' : 'A failed witness rules out primality.'));
+    set('fermat-method', random ? 'PRIMETEST.ISNOTPRIME' : 'EXPLICIT-BASE INSPECTION');
+    set('fermat-mode-label', random ? 'ORIGINAL PROBABILISTIC ALGORITHM' : 'PLAYGROUND INSPECTION TOOL');
+    set('fermat-verdict', n < 2n ? 'Not prime' : result.isNotPrime ? 'Composite detected' : n <= 3n ? 'Prime · direct check' : 'No composite witness');
+    set('fermat-detail', random
+      ? `${result.reason ? `${result.reason} ` : ''}IsNotPrime returns ${result.isNotPrime ? 'true' : 'false'}.`
+      : result.reason || (result.probablePrime ? 'All selected bases pass. This does not prove primality.' : 'At least one selected base proves the number is composite.'));
+    set('rounds-status', `${result.completedRounds} / ${result.effectiveRounds} ${random ? 'rounds run' : 'bases checked'}`);
     set('exact-verdict', prime ? 'Prime' : n < 2n ? 'Neither prime nor composite' : 'Composite');
     const fragment = document.createDocumentFragment();
-    result.results.forEach((witness) => {
+    result.results.forEach((witness, index) => {
       const row = document.createElement('div'); row.className = 'witness-row';
-      const equation = document.createElement('span'); equation.textContent = `${witness.base}^${n - 1n} mod ${n} = ${witness.residue}`;
+      const equation = document.createElement('span'); equation.textContent = `${index + 1}.  ${witness.base}^${n - 1n} mod ${n} = ${witness.residue}`;
       const verdict = document.createElement('span'); verdict.textContent = witness.passes ? 'Pass' : 'Composite witness';
       row.append(equation, verdict); fragment.append(row);
     });
     $('witness-results').replaceChildren(fragment);
-    set('trap-note', !prime && result.probablePrime
-      ? `${fmt(n)} fooled all selected bases. ${n === 561n ? '561 = 3 × 11 × 17 is a Carmichael number: every base coprime to 561 passes Fermat. Try adding base 3.' : n === 341n ? '341 = 11 × 31 is a base-2 pseudoprime. Try adding base 3.' : 'Passing Fermat is evidence, not a certificate.'}`
-      : prime ? `${fmt(n)} is prime. Every allowed Fermat base passes; the deterministic check confirms it in the supported range.`
-      : n < 2n ? 'Primes are integers greater than 1. These values are outside that definition.'
-      : `A witness caught ${fmt(n)}. One failed Fermat congruence is enough to rule out primality.`);
+    const note = n < 2n ? 'The original method rejects values below 2 before drawing a base.'
+      : n <= 3n ? 'The original method recognises 2 and 3 directly; no random witnesses are needed.'
+      : random && n % 2n === 0n ? 'Even candidates greater than 2 are rejected before the first round.'
+      : n === 561n ? `561 = 3 × 11 × 17. Every base coprime to 561 passes Fermat.${random ? ' Run again to inspect another random sample, or choose bases 2, 5, 13 to reproduce a pass.' : ' Base 3 exposes a composite witness; try adding it.'}`
+      : result.isNotPrime ? `A failed congruence rules out primality.${random ? ' The original method returns immediately, so the remaining rounds do not run.' : ''}`
+      : `No tested base rejected ${fmt(n)}.${random ? ' A new run draws fresh bases.' : ''} The separate reference check can help you interpret this result.`;
+    set('trap-note', note);
   } catch (error) {
     set('fermat-error', error.message);
     set('fermat-verdict', 'Check inputs'); set('exact-verdict', '—');
-    set('fermat-detail', 'Enter a valid candidate and witness bases to run both tests.');
-    set('candidate-label', '—'); set('trap-note', '');
+    set('fermat-detail', 'Enter a valid candidate and round count or witness bases.');
+    set('candidate-label', '—'); set('trap-note', ''); set('rounds-status', '');
     $('witness-results').replaceChildren();
   }
 }
 $('fermat-form').addEventListener('submit', (event) => { event.preventDefault(); runFermat(); });
+document.querySelectorAll('input[name="witness-mode"]').forEach((input) => input.addEventListener('change', () => {
+  const random = randomMode();
+  $('rounds-field').hidden = !random; $('rounds').disabled = !random;
+  $('bases-field').hidden = random; $('bases').disabled = random;
+  set('fermat-action', random ? 'Run random rounds' : 'Inspect these bases');
+  runFermat();
+}));
 document.querySelectorAll('[data-candidate]').forEach((button) => button.addEventListener('click', () => {
   $('candidate').value = button.dataset.candidate;
   $('bases').value = button.dataset.candidate === '341' ? '2' : '2, 5, 13';
@@ -222,7 +247,14 @@ async function loadSource() {
     const entries = await response.json();
     if (!entries.length) throw new Error('Source empty');
     $('source-select').replaceChildren();
-    entries.forEach((entry) => { const option = document.createElement('option'); option.value = entry.name; option.textContent = entry.label; $('source-select').append(option); });
+    for (const kind of ['original', 'extension']) {
+      const group = document.createElement('optgroup');
+      group.label = kind === 'original' ? 'Original C# · preserved source' : 'Playground additions';
+      entries.filter((entry) => entry.kind === kind).forEach((entry) => {
+        const option = document.createElement('option'); option.value = entry.name; option.textContent = entry.label; group.append(option);
+      });
+      $('source-select').append(group);
+    }
     const show = () => {
       const entry = entries.find((item) => item.name === $('source-select').value);
       current = entry.code;

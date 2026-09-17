@@ -1,0 +1,29 @@
+{
+  "repository": "https://github.com/cronfm/RSA",
+  "visibility": "private",
+  "commit": "945b57287ef5d88f6413d397cc1f8c7a535f2bd7",
+  "normalization": "UTF-8 source text with CRLF and CR normalized to LF; all other code and comments unchanged.",
+  "packaging": "A new .NET 10 library project compiles the original source with Npgsql 10.0.1. The original executable entry point, application configuration, and user secrets are not included.",
+  "files": [
+    {
+      "path": "csharp/RsaShowcase.Original/PrimeTest.cs",
+      "originPath": "RSA/PrimeTest.cs",
+      "sha256": "f3cf4dc629eb26fdc5cfb576d99921da0fa96853d553711fadcbcbd16e9877b1"
+    },
+    {
+      "path": "csharp/RsaShowcase.Original/ModularExponentiation.cs",
+      "originPath": "RSA/ModularExponentiation.cs",
+      "sha256": "4a9259d2dc4c3cd4590b4abd6151e7aa0f63c59184ec9e86a81a5b134089a8d5"
+    },
+    {
+      "path": "csharp/RsaShowcase.Original/PrimeDBVerifier.cs",
+      "originPath": "RSA/PrimeDBVerifier.cs",
+      "sha256": "7463e00c2dc7a8d24fc23aaf0e83325c06a52d9c9c389e887600e2a4bb94f80b"
+    },
+    {
+      "path": "csharp/RsaShowcase.Original/PrimeTableChecker.cs",
+      "originPath": "RSA/PrimeTableChecker.cs",
+      "sha256": "02ea2bf9c48429ca24efca9edc3073bf423b0c18fc78d7f5fdfde2f1fe6aee4d"
+    }
+  ]
+}

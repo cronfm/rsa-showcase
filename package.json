@@ -11,6 +11,7 @@
     "start": "node server.mjs",
     "test": "node --test tests/*.test.mjs",
     "test:parity": "node scripts/check-parity.mjs",
+    "test:original-parity": "node scripts/check-original-parity.mjs",
     "deploy": "npm run build && wrangler deploy"
   },
   "devDependencies": { "prismjs": "1.30.0", "wrangler": "4.132.0" }

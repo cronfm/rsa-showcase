@@ -18,5 +18,7 @@ jobs:
       - run: npm test
       - run: dotnet build csharp/RsaShowcase.slnx -c Release
       - run: dotnet run --project csharp/RsaShowcase.Tests -c Release --no-build
+      - run: dotnet run --project csharp/RsaShowcase.Original.Tests -c Release --no-build
       - run: npm run test:parity
+      - run: npm run test:original-parity
       - run: npm run build
