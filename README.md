@@ -9,7 +9,7 @@ A showcase of Frederik Cronjé’s original probabilistic primality-testing code
 - **Fermat test, the default view:** choose a candidate and maximum round count. Fresh random bases follow the original sampler; the test stops at the first failed congruence. `IsNotPrime == false` means no sampled witness rejected the candidate, not proof of primality.
 - **Original C# viewer:** opens on `PrimeTest.cs`. Recursive modular exponentiation, asynchronous database sampling and parallel verification are also available, unchanged except for line endings.
 - **Inspection tools:** choose explicit bases to reproduce a Fermat pass or failure. A collapsed Miller–Rabin reference check is labeled as an added comparison, not the original algorithm.
-- **RSA studio:** an added educational key-building and integer round-trip demonstration with exponentiation traces.
+- **RSA studio:** an added educational key-building and integer round-trip demonstration with exponentiation traces, digits-only inputs and live exponent checks. A brief guide explains the steps using [HAC §8.2, Algorithms 8.1 and 8.3](https://cacr.uwaterloo.ca/hac/about/chap8.pdf#page=5), with the exponent-efficiency note from Note 8.9.
 - **Prime atlas:** explore 10,000 independently verified primes from a CC0 Kaggle dataset; select one for the studio or download the subset.
 
 The RSA extension uses **textbook RSA**, public dataset primes and unpadded integer messages. It is variable-time and unsuitable for protecting secrets. [RFC 8017](https://www.rfc-editor.org/rfc/rfc8017.html) describes RSA primitives and encryption/signature schemes.

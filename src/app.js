@@ -1,5 +1,6 @@
-import { rsaRoundTrip, fermatTest, isPrime } from './engine.js';
+import { rsaRoundTrip, fermatTest, isPrime, gcd } from './engine.js';
 import { originalFermatTest } from './original-fermat.js';
+import { bindUnsignedIntegerInput } from './integer-inputs.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = (value) => value.toLocaleString('en-US');
@@ -15,6 +16,47 @@ let traceMode = 'encrypt';
 let primes = [];
 let atlasOffset = 0;
 const pageSize = 60;
+
+for (const id of ['prime-p', 'prime-q', 'public-e', 'message']) {
+  bindUnsignedIntegerInput($(id), ({ reason }) => {
+    set('integer-feedback', reason === 'length'
+      ? 'Use at most 20 digits. The previous value was kept.'
+      : 'Digits 0–9 only. Letters, signs, spaces and decimal points are not accepted.');
+  });
+}
+
+function updateExponentGuidance() {
+  const feedback = $('exponent-feedback');
+  feedback.dataset.state = 'neutral';
+  $('public-e').removeAttribute('aria-invalid');
+  set('message-max', 'n − 1');
+  try {
+    const p = integer('prime-p', 'Prime p');
+    const q = integer('prime-q', 'Prime q');
+    if (p <= 2n || q <= 2n || p === q || p > 1_000_000n || q > 1_000_000n || !isPrime(p) || !isPrime(q)) {
+      throw new Error('Choose two distinct odd primes below 1,000,000 to check e.');
+    }
+    const phi = (p - 1n) * (q - 1n);
+    set('message-max', fmt(p * q - 1n));
+    if (!$('public-e').value) {
+      set('exponent-feedback', `For these primes, φ(n) = ${fmt(phi)}. Enter e from 2 to ${fmt(phi - 1n)}, then check that its GCD with φ(n) is 1.`);
+      return;
+    }
+    const e = integer('public-e', 'Exponent');
+    const common = gcd(e, phi);
+    const inRange = e > 1n && e < phi;
+    const valid = inRange && common === 1n;
+    feedback.dataset.state = valid ? 'valid' : 'invalid';
+    $('public-e').setAttribute('aria-invalid', String(!valid));
+    set('exponent-feedback', !inRange
+      ? `φ(n) = ${fmt(phi)}. Choose e from 2 to ${fmt(phi - 1n)}; ${fmt(e)} is outside that range.`
+      : common !== 1n
+        ? `φ(n) = ${fmt(phi)}. gcd(${fmt(e)}, ${fmt(phi)}) = ${fmt(common)}, so this e has no inverse. Try another integer.`
+        : `φ(n) = ${fmt(phi)}. gcd(${fmt(e)}, ${fmt(phi)}) = 1: this e is valid and has an inverse.`);
+  } catch {
+    set('exponent-feedback', 'Choose two distinct odd primes below 1,000,000 to check e.');
+  }
+}
 
 function switchTab(name, focus = false) {
   document.querySelectorAll('[data-tab]').forEach((button) => {
@@ -62,6 +104,8 @@ function renderTrace() {
   });
 }
 function runRsa() {
+  set('integer-feedback', '');
+  updateExponentGuidance();
   try {
     const p = integer('prime-p', 'Prime p');
     const q = integer('prime-q', 'Prime q');
@@ -92,7 +136,11 @@ function runRsa() {
   }
 }
 $('rsa-form').addEventListener('submit', (event) => { event.preventDefault(); runRsa(); });
-$('rsa-form').addEventListener('input', () => { if (roundTrip) set('roundtrip-status', 'Inputs changed · run to update'); });
+$('rsa-form').addEventListener('input', () => {
+  set('integer-feedback', '');
+  updateExponentGuidance();
+  if (roundTrip) set('roundtrip-status', 'Inputs changed · run to update');
+});
 ['encrypt', 'decrypt'].forEach((mode) => $(`trace-${mode}`).addEventListener('click', () => { traceMode = mode; renderTrace(); }));
 const presets = { classic: [61, 53, 17, 65], larger: [101, 113, 17, 65], wide: [1009, 1013, 65537, 2026] };
 document.querySelectorAll('[data-preset]').forEach((button) => button.addEventListener('click', () => {
