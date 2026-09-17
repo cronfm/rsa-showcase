@@ -1,0 +1,17 @@
+{
+  "name": "rsa-showcase",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "PRIME — an interactive RSA and primality laboratory with C# source",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "node server.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:parity": "node scripts/check-parity.mjs",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "devDependencies": { "prismjs": "1.30.0", "wrangler": "4.132.0" }
+}

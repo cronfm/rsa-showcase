@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="RsaShowcase.Core/RsaShowcase.Core.csproj" />
+  <Project Path="RsaShowcase.Cli/RsaShowcase.Cli.csproj" />
+  <Project Path="RsaShowcase.Tests/RsaShowcase.Tests.csproj" />
+</Solution>

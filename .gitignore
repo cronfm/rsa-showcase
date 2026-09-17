@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.wrangler/
+**/bin/
+**/obj/
+.dotnet-home/
+.env*
+.dev.vars*
+*.log
+.DS_Store
+work/
